@@ -1,0 +1,410 @@
+# Homework Number 1
+## Names: Mark Stumpf, Bradley Cronce, Michael Nastasi
+
+```{r Systime, echo = FALSE, comment = NA}
+DT <- format(Sys.time(), "%A, %B %d, %Y - %X")
+```
+
+This work was last compiled on `r DT`.
+
+```{r label = setup, echo = FALSE, message = FALSE}
+options(width = 120)
+opts_chunk$set(comment = NA, fig.height = 5, fig.width =5, fig.align = 'center')
+library(ggplot2)
+library(lattice)
+```
+
+**Prob 1:** Access the data from URL 
+[http://www.stat.berkeley.edu/users/statlabs/data/babies.data](http://www.stat.berkeley.edu/users/statlabs/data/babies.data),
+and store the information in an object named `BABIES` using the function 
+`read.table()`. A description of the variables can be found at
+[http://www.stat.berkeley.edu/users/statlabs/labs.html](http://www.stat.berkeley.edu/users/statlabs/labs.html).  These data are a subset from a much larger study dealing with 
+child health and development.  Use the functions `summary()` and `dim()` on `BABIES`, and report the number of rows and columns of `BABIES`.
+
+```{r prob1}
+babiesURL <- "http://www.stat.berkeley.edu/users/statlabs/data/babies.data"
+BABIES <- read.table(babiesURL, header=TRUE)
+summary(BABIES)
+dim(BABIES)
+```
+
+> **Prob 1 answer**: There are **`r dim(BABIES)[1]`** rows and **`r dim(BABIES)[2] `** columns in BABIES.
+
+**Prob 2:** The variables `bwt`, `gestation`, `parity`, `age`, `height`, `weight`, and `smoke` use values of 999, 999, 9, 99, 99, 999, and 9, respectively, to denote ''unknown.''  `R` uses `NA` to denote a missing or unavailable value.  Re-code the missing values in `BABIES`.  Hint: use something similar to `BABIES$bwt[BABIES$bwt == 999] = NA`.  Run the functions `summary()` and `dim()` on your `BABIES` data frame.
+
+```{r prob2}
+BABIES$bwt[BABIES$bwt == 999] = NA
+BABIES$gestation[BABIES$gestation == 999] = NA
+BABIES$parity[BABIES$parity == 9] = NA
+BABIES$age[BABIES$age == 99] = NA
+BABIES$height[BABIES$height == 99] = NA
+BABIES$weight[BABIES$weight == 999] = NA
+BABIES$smoke[BABIES$smoke == 9] = NA
+
+summary(BABIES)
+dim(BABIES)
+
+```
+
+**Prob 3:** Use the function `na.omit()` to create a ''clean'' data set that removes subjects if any observations on the subject are ''unknown.''   Store the modified data frame in a data frame named `CLEAN`.  Run the function `dim()` on the data frame `CLEAN`.  
+
+
+```{r prob3}
+CLEAN <- data.frame(na.omit(BABIES))
+dim(CLEAN)
+
+```
+
+**Prob 4:** How many missing values in the data frame `BABIES` are there for `gestation`, `age`, `height`, `weight`, and `smoke`, respectively?  How many rows of `BABIES` have no missing values, one missing value, two missing values, and three missing values, respectively?  Note: the number of rows in `CLEAN` should agree with your answer for the number of rows in `BABIES` that have no missing values.
+
+```{r prob4}
+x <- subset(BABIES, is.na(BABIES$gestation))
+naG <- dim(x)[1]
+x <- subset(BABIES, is.na(BABIES$age))
+naA <- dim(x)[1]
+x <- subset(BABIES, is.na(BABIES$height))
+naH <- dim(x)[1]
+x <- subset(BABIES, is.na(BABIES$weight))
+naW <- dim(x)[1]
+x <- subset(BABIES, is.na(BABIES$smoke))
+naS <- dim(x)[1]
+
+tbs <- table(apply(is.na(BABIES), 1, sum))
+```
+
+> **Prob 4 answer:** Missing values by column in BABIES:
+>   * gestation: **`r naG `** 
+>   * age:       **`r naA `** 
+>   * height:    **`r naH `** 
+>   * weight:    **`r naW `** 
+>   * smoke:     **`r naS `** 
+
+> Rows with missing values in BABIES:
+>   * 0 rows:   **`r tbs[1]`**
+>   * 1 rows:   **`r tbs[2]`**
+>   * 2 rows:   **`r tbs[3]`**
+>   * 3 rows:   **`r tbs[4]`**
+
+
+**Prob 5:** Sort the values in `CLEAN` by `bwt`, `gestation`, and `age`.  Store the sorted values in a data frame named `BGA` and show the last six rows of `BGA`.
+
+```{r prob5}
+BGA <- CLEAN[order(CLEAN$bwt, CLEAN$gestation, CLEAN$age),]
+tail(BGA)
+```
+
+**Prob 6:** Store the data frame `CLEAN` in your working directory as a `*.csv` file using the function `write.csv()` using the argument `row.names = FALSE`.
+Use the function `read.csv()` to read the file back in to your working directory and store
+the result in `NAELC`.  Show the first six rows of the data frame `NAELC`.  
+
+```{r prob6}
+write.csv(CLEAN, file="clean.csv", row.names = FALSE)
+NAELC <- read.csv("clean.csv")
+head(NAELC)
+```
+
+**Prob 7:** What percent of the women in `CLEAN` are pregnant with their first child (`parity = 0`) and do not smoke?
+
+```{r prob7}
+x <- subset(CLEAN, CLEAN$parity == 0 & CLEAN$smoke == 0)
+nonsmoken <- (dim(x)[1]/dim(CLEAN)[1])*100
+```
+
+> **Prob 7 answer:** The percent of nonsmokers mothers having their first child: **`r nonsmoken `%**
+
+**Prob 8:** Use the information in `CLEAN` to create a density histogram of the birth weights of babies whose mothers have never smoked (`smoke = 0`) and another histogram placed directly below the first in the same graphics device for the birth weights of babies whose mothers currently smoke (`smoke = 1`).  Make the range of the $x$-axis 50 to 180 (ounces) for both histograms.  Superimpose a density curve over each histogram, and label the $x$-axis "Weight in Ounces".  *Extra credit if you create the requested graph with the three graphic systems (base, lattice, and ggplot2).*
+
+```{r prob8a, warning = FALSE, message=FALSE}
+ggplot(data = CLEAN, aes(x=bwt, y=..density..)) + geom_histogram() + xlim(50, 180) + xlab("Weight in Ounces") + facet_grid(smoke~.) + geom_density(color="blue")
+
+```
+
+```{r prob8b}
+par(mfrow=c(2,1))
+hist(CLEAN$bwt[CLEAN$smoke == 0], xlim = c(50,180), xlab="Weight in Ounces", main = "Birth weights for non smoking mothers", prob=T)
+lines(density(CLEAN$bwt[CLEAN$smoke == 0]), col = "red")
+hist(CLEAN$bwt[CLEAN$smoke == 1], xlim = c(50,180), xlab="Weight in Ounces", main = "Birth weights for smoking mothers", prob=T)
+lines(density(CLEAN$bwt[CLEAN$smoke == 1]), col = "red")
+
+```
+
+
+```{r, prob8c}
+copy <- CLEAN$smoke
+factoredSmoke <- factor(copy, labels=c("non-smoker", "smoker"))
+histogram(data = CLEAN, ~bwt | factoredSmoke, xlim = c(50, 180), xlab = "Weight in Ounces", main = "Birth weights for smoking & non smoking mothers")
+```
+
+**Prob 9:** Based on the histograms, characterize the distribution of baby birth weight for both non-smoking and smoking mothers.
+
+```{r prob9}
+
+nonsmoke <- CLEAN$bwt[CLEAN$smoke == 0] 
+meannonsmoke <- mean(nonsmoke)
+mediannonsmoke <- median(nonsmoke)
+rangenonsmoke <- range(nonsmoke)
+varnonsmoke <- var(nonsmoke)
+devnonsmoke <- sd(nonsmoke)
+
+smoke <- CLEAN$bwt[CLEAN$smoke == 1] 
+meansmoke <- mean(smoke)
+mediansmoke <- median(smoke)
+rangesmoke <- range(nonsmoke)
+varsmoke <- var(smoke)
+devsmoke <- sd(smoke)
+
+```
+
+> **Prob 9 answer:** Characterization for Smokers:
+ 
+>   * Shape: **Skewed to the left.**
+
+>   * Center:
+      * mean: **`r meansmoke `**
+      * median: **`r mediansmoke `**
+
+>   * Spread:
+      * Range: **`r rangesmoke `**
+      * Variance: **`r varsmoke `**
+      * Standard deviation: **`r devsmoke `**
+
+> Characterization for Nonsmokers:
+>   * Shape: **Skewed to the right.**
+>
+>   * Center:
+      * mean: **`r meannonsmoke `**
+      * median: **`r mediannonsmoke `**
+>
+>   * Spread:
+      * Range: **`r rangenonsmoke `**
+      * Variance: **`r varnonsmoke `**
+      * Standard deviation: **`r devsmoke `**
+
+**Prob 10:** Create side-by-side boxplots to compare the birth weights of babies whose mother's never smoked and those who currently smoke.  Use base graphs (`boxplot()`), lattice graphs (`bwplot()`), and ggplot2 graphs to create the boxplots.  Label the $y$-axis "Weight in Ounces".
+
+```{r prob10a}
+par(mfrow=c(1,2))
+boxplot(CLEAN$bwt[CLEAN$smoke == 0], ylab = "Weight in Ounces", main = "Non-Smoking")
+boxplot(CLEAN$bwt[CLEAN$smoke == 1], ylab = "Weight in Ounces", main = "Smoking")
+```
+
+```{r prob10b}
+bwplot(data = CLEAN, ~bwt | factoredSmoke, ylab = "Weight in Ounces", main = "Birth weights of smoking & non-smoking mothers")
+```
+
+```{r prob10c}
+par(mfrow=c(1,1))
+ggplot(data=CLEAN, aes(y=bwt, x=factor(smoke))) +geom_boxplot() + coord_flip() + ggtitle("Birth weights of smoking vs non-smoking mothers")
+```
+
+**Prob 11:** What is the median weight difference between babies who are firstborn
+(`parity = 0`) and those who are not (`parity = 1`)?
+
+```{r prob11}
+medianDiff <- median(CLEAN$bwt[CLEAN$parity == 0]) - median(CLEAN$bwt[CLEAN$parity == 1])
+```
+
+> **Prob 11 answer:** The median weight difference between babies who are firstborn and those who are not is: **`r medianDiff`**
+
+**Prob 12:** Create a single graph of the densities for pre-pregnancy `weight` for mothers who have never smoked and for mothers who currently smoke.  Make sure both densities appear in the same graph and have a legend.  Label the $x$-axis "Weight in Pounds".  *Extra credit if you create the requested graph using base, lattice, and ggplot2 graphics.*
+
+```{r prob12a}
+str(CLEAN)
+nonsmoking <- subset(CLEAN, CLEAN$smoke==0)
+smoking <- subset(CLEAN, CLEAN$smoke==1)
+ggplot() + geom_density(aes(x=weight, color="non-smokers"), data=nonsmoking) + geom_density(aes(x=weight, color="smokers"), data=smoking) + theme(legend.title = element_blank()) + ggtitle("Densities of birth weight in smoking & nonsmoking mothers")
+```
+
+```{r prob12b}
+#
+```
+
+```{r prob12c}
+#
+```
+
+**Prob 13:** Characterize the pre-pregnancy distribution of `weight` for mothers who have never smoked and for mothers who currently smoke.
+
+```{r prob13}
+
+nonsmoke <- CLEAN$weight[CLEAN$smoke == 0] 
+meannonsmoke <- mean(nonsmoke)
+mediannonsmoke <- median(nonsmoke)
+rangenonsmoke <- range(nonsmoke)
+varnonsmoke <- var(nonsmoke)
+devnonsmoke <- sd(nonsmoke)
+
+smoke <- CLEAN$weight[CLEAN$smoke == 1] 
+meansmoke <- mean(smoke)
+mediansmoke <- median(smoke)
+rangesmoke <- range(nonsmoke)
+varsmoke <- var(smoke)
+devsmoke <- sd(smoke)
+
+```
+
+> **Prob 13 answer:** Characterization for Smokers:
+ 
+>   * Shape: **Skewed to the left.**
+
+>   * Center:
+      * mean: **`r meansmoke `**
+      * median: **`r mediansmoke `**
+
+>   * Spread:
+      * Range: **`r rangesmoke `**
+      * Variance: **`r varsmoke `**
+      * Standard deviation: **`r devsmoke `**
+
+> Characterization for Nonsmokers:
+>   * Shape: **Skewed to the left.**
+>
+>   * Center
+      * mean: **`r meannonsmoke `**
+      * median: **`r mediannonsmoke `**
+>
+>   * Spread: 
+      * Range: **`r rangenonsmoke `**
+      * Variance: **`r varnonsmoke `**
+      * Standard deviation: **`r devsmoke `** 
+
+
+**Prob 14:** What is the mean pre-pregnancy weight difference between mothers who do not smoke and those who do?  Can you think of any reasons not to use the mean as a measure of center to compare pre-pregnancy weights in this problem?
+
+```{r prob14}
+meanDiff <- mean(CLEAN$weight[CLEAN$smoke == 0]) - mean(CLEAN$weight[CLEAN$smoke == 1])
+```
+
+> **Prob 14 answer:** The mean pre-pregnancy weight difference between mothers who smoke and those who do not is: **`r meanDiff`**. This may not be a good measure of center to compare because there are twice as many nonsmokers as there are smokers, and there are a few outliers in each data set.
+
+
+**Prob15:** Compute the body mass index (`BMI`) for each mother in `CLEAN`.  Recall that `BMI` is defined as $\text{kg}/\text{m}^2$ (0.0254 m = 1 in., and 0.45359 kg = 1 lb.).  Add the variables weight in kg, height in m, and BMI to `CLEAN` and store the result in `CLEANP`.  Show the first six rows of `CLEANP`.
+
+```{r prob15}
+CLEANP = CLEAN
+CLEANP$height_m = CLEANP$height*0.0254
+CLEANP$weight_kg = CLEANP$weight*0.45359
+CLEANP$BMI = round((CLEANP$weight_kg)/((CLEANP$height_m)^2), 2)
+head(CLEANP)
+```
+
+**Prob 16:** Characterize the distribution of BMI.  Create either a histogram or density plot to
+help determine the shape of the BMI distribution.  Label the $x$-axis "BMI ($kg/m^2$)".
+
+```{r prob16}
+ggplot() + geom_density(data = CLEANP, aes(x=BMI)) + xlab("BMI (kg/m^2)") + ggtitle("Mother BMI")
+
+bmi <- CLEANP$BMI 
+meanbmi <- mean(bmi)
+medianbmi <- median(bmi)
+rangebmi <- range(bmi)
+varbmi <- var(bmi)
+devbmi <- sd(bmi)
+```
+
+> **Prob 16 answer:** Characterization for Smokers:
+ 
+>   * Shape: **Skewed to the left.**
+
+>   * Center:
+      * mean: **`r meanbmi `**
+      * median: **`r medianbmi `**
+
+>   * Spread: 
+      * Range: **`r rangebmi `**
+      * Variance: **`r varbmi `**
+      * Standard deviation: **`r devbmi `**
+      
+
+**Prob 17:** Group pregnant mothers according to their BMI quartile. Find the mean and standard deviation for baby birth weights in each quartile for mothers who have never smoked and those who currently smoke.   Find the median and IQR for baby birth weights in each quartile for mothers who have never smoked and those who currently smoke. Based on your answers, would you characterize birth weight in each group as relatively symmetric or skewed? Create histograms and densities of `bwt` conditioned on `BMI` quartiles and whether the mother smokes to verify your previous assertions about the shape.
+
+```{r prob17a}
+cuts = cut(CLEANP$BMI, quantile(CLEANP$BMI, c(0, .25, .5, .75, 1)))
+BMIquarts = aggregate(CLEANP$BMI, list(cuts), FUN = list)
+```
+
+```{r prob17b}
+#mean and standard deviation for smoking and non-smoking mothers in BMI quartile 1
+nosmoke_mean_1 = mean(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[1,2]) & CLEANP$smoke == 0])
+nosmoke_sd_1 = sd(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[1,2]) & CLEANP$smoke == 0])
+smoke_mean_1 = mean(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[1,2]) & CLEANP$smoke == 1])
+smoke_sd_1 = sd(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[1,2]) & CLEANP$smoke == 1])
+
+#mean and standard deviation for smoking and non-smoking mothers in BMI quartile 2
+nosmoke_mean_2 = mean(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[2,2]) & CLEANP$smoke == 0])
+nosmoke_sd_2 = sd(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[2,2]) & CLEANP$smoke == 0])
+smoke_mean_2 = mean(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[2,2]) & CLEANP$smoke == 1])
+smoke_sd_2 = sd(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[2,2]) & CLEANP$smoke == 1])
+
+#mean and standard deviation for smoking and non-smoking mothers in BMI quartile 3
+nosmoke_mean_3 = mean(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[3,2]) & CLEANP$smoke == 0])
+nosmoke_sd_3 = sd(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[3,2]) & CLEANP$smoke == 0])
+smoke_mean_3 = mean(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[3,2]) & CLEANP$smoke == 1])
+smoke_sd_3 = sd(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[3,2]) & CLEANP$smoke == 1])
+
+#mean and standard deviation for smoking and non-smoking mothers in BMI quartile 4
+nosmoke_mean_4 = mean(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[4,2]) & CLEANP$smoke == 0])
+nosmoke_sd_4 = sd(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[4,2]) & CLEANP$smoke == 0])
+smoke_mean_4 = mean(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[4,2]) & CLEANP$smoke == 1])
+smoke_sd_4 = sd(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[4,2]) & CLEANP$smoke == 1])
+
+#median and IQR for smoking and non-smoking mothers in BMI quartile 1
+nosmoke_median_1 = median(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[1,2]) & CLEANP$smoke == 0])
+nosmoke_iqr_1 = IQR(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[1,2]) & CLEANP$smoke == 0])
+smoke_median_1 = median(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[1,2]) & CLEANP$smoke == 1])
+smoke_iqr_1 = IQR(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[1,2]) & CLEANP$smoke == 1])
+
+#median and IQR for smoking and non-smoking mothers in BMI quartile 2
+nosmoke_median_2 = median(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[2,2]) & CLEANP$smoke == 0])
+nosmoke_iqr_2 = IQR(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[2,2]) & CLEANP$smoke == 0])
+smoke_median_2 = median(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[2,2]) & CLEANP$smoke == 1])
+smoke_iqr_2 = IQR(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[2,2]) & CLEANP$smoke == 1])
+
+#median and IQR for smoking and non-smoking mothers in BMI quartile 3
+nosmoke_median_3 = median(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[3,2]) & CLEANP$smoke == 0])
+nosmoke_iqr_3 = IQR(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[3,2]) & CLEANP$smoke == 0])
+smoke_median_3 = median(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[3,2]) & CLEANP$smoke == 1])
+smoke_iqr_3 = IQR(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[3,2]) & CLEANP$smoke == 1])
+
+#median and IQR for smoking and non-smoking mothers in BMI quartile 4
+nosmoke_median_4 = median(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[4,2]) & CLEANP$smoke == 0])
+nosmoke_iqr_4 = IQR(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[4,2]) & CLEANP$smoke == 0])
+smoke_median_4 = median(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[4,2]) & CLEANP$smoke == 1])
+smoke_iqr_4 = IQR(CLEANP$bwt[CLEANP$BMI %in% do.call(cbind,BMIquarts[4,2]) & CLEANP$smoke == 1])
+```
+
+```{r prob17c}
+cleantemp = CLEANP
+cleantemp$quart = cuts
+ggplot(data=cleantemp, aes(x = bwt)) + geom_histogram() + facet_grid(quart ~ smoke)
+ggplot(data=cleantemp, aes(x = bwt)) + geom_density() + facet_grid(quart ~ smoke)
+```
+
+> **Prob 17 answer:** The birth weight in each group is relatively symmetric.  
+
+**Prob 18:** Create side-by-side boxplots of `bwt` based on whether the mother
+smokes conditioned on `BMI` quartiles.  What do you notice using the boxplots?
+
+```{r prob18}
+bwplot(data = cleantemp, bwt ~ quart | factoredSmoke, ylab = "Weight in Ounces", main = "Birth weights of smoking & non-smoking mothers")
+```
+
+> **Prob 18 answer:** On average, non smoking mothers have a heavier baby.
+
+
+**Prob 19:** Does it appear that BMI is related to the birth weight of a baby? Create a scatterplot of birth weight (`bwt`) versus `BMI` while conditioning on BMI quartiles and whether the mother smokes to help answer the question.  Use `log(bwt)` on the $y$-axis instead of the untransformed `bwt`.
+
+```{r prob19, fig.width = 8, tidy = FALSE}
+xyplot(data = cleantemp, log(bwt) ~ BMI | quart + factoredSmoke, main = "Birthweight vs BMI conditioned on BMI quartiles & smokes vs nonsmokes")
+```
+
+> **Prob 19 answer:** No, it does not appear that BMI is related to the birth weight of a baby.
+
+
+**Prob 20:** Create a scatterplot of `bwt` versus `gestation` conditioned on BMI quartiles and whether the mother smokes using `ggplot2` graphics.  Fit curves to the data using `loess` and `lm` (`stat_smooth()`); and display the fitted curves in the scatterplots. What do you find interesting about the resulting graphs? 
+
+```{r prob20, fig.width = 8}
+ggplot(cleantemp, aes(x=bwt, y=gestation)) + geom_point(color="blue") + facet_grid(quart ~ smoke) + stat_smooth(method = lm, color = "green") + stat_smooth(method=loess, color="red")
+```
+
+> **Prob 20 answer:**  We found it interesting that both smokers vs non smokers graphs look similar. It was not surprising that birth weights were lower for shorter gestations.
