@@ -83,10 +83,12 @@
 
 
 
+
 ##  2) A friend claims that she has drawn a random sample of size 24
 ##     from a uniform distribution with a = 0, b = 6.
 
 #      a) What is the expected value of the sample mean?
+
               
 #             E[x] = (b + a) / n
               a <- 0
@@ -104,6 +106,9 @@
               n <- 2
               VAR2B <- ((((b - a)^2) / 12) / n)
               VAR2B
+
+#      b) What is the variance of the sample mean?
+
 
 #      c) What is the standard deviation of the sample mean?
 
